@@ -7,7 +7,7 @@
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Thêm salt vào mật khẩu
-        $salt = "supersalt!!!"; // Chuỗi salt mà bạn muốn sử dụng
+        $salt = "supersalt!!!"; 
         $password = $salt . $_POST['password'];  // Kết hợp salt và mật khẩu người dùng nhập vào
 
         // Băm mật khẩu đã kết hợp salt
