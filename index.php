@@ -21,7 +21,7 @@
 
                     echo '<h4>[Admin Section]</h4>';
                     echo '<table>';
-                    echo '<tr><th>Uid</th><th>Username</th><th>Password (SHA256)</th><th>Description</th></tr>';
+                    echo '<tr><th>Uid</th><th>Username</th><th>Password (Hashed)</th><th>Description</th></tr>';
                     while ($row = pg_fetch_row($ret)) {
                         echo '<tr>';
                         echo '<td>'.$row[0].'</td>';
