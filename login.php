@@ -1,12 +1,23 @@
 <?php
 session_start();
 
+// Tạo CSRF token khi tải trang
+if (!isset($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+// Nếu đã đăng nhập, chuyển hướng về trang chính
 if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     header('Location: /index.php');
     exit();
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Kiểm tra CSRF token
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        die('Invalid CSRF token.');
+    }
+
     include('includes/db_connect.php');
 
     $username = trim($_POST['username']);
@@ -14,12 +25,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Kiểm tra nếu đã vượt quá số lần thử đăng nhập
     if (isset($_SESSION['login_attempts']) && $_SESSION['login_attempts'] >= 5) {
-        // Kiểm tra xem đã đủ 1 phút chưa
         if (isset($_SESSION['lock_time']) && (time() - $_SESSION['lock_time']) < 60) {
-            // Nếu chưa đủ 1 phút, yêu cầu thử lại sau
             $error = 'Too many failed attempts. Please try again in ' . (60 - (time() - $_SESSION['lock_time'])) . ' seconds.';
         } else {
-            // Nếu đã đủ 1 phút, reset số lần thử đăng nhập
             $_SESSION['login_attempts'] = 0;
             unset($_SESSION['lock_time']);
         }
@@ -33,29 +41,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (pg_num_rows($ret) === 1) {
             $hashed_password = pg_fetch_result($ret, 0, 'password');
 
-            // Xác minh mật khẩu
             if (password_verify($password, $hashed_password)) {
-                // Đăng nhập thành công
                 $_SESSION['loggedin'] = true;
                 $_SESSION['username'] = $username;
 
-                // Kiểm tra nếu là admin
                 if ($username === 'admin') {
                     $_SESSION['isadmin'] = true;
                 }
 
-                // Reset số lần thử đăng nhập
                 $_SESSION['login_attempts'] = 0;
+                unset($_SESSION['csrf_token']); // Reset CSRF token sau khi đăng nhập thành công
                 header('Location: /index.php');
                 exit();
             }
         }
 
-        // Nếu đăng nhập thất bại
         $error = 'Invalid username or password.';
         $_SESSION['login_attempts']++;
 
-        // Nếu số lần thử vượt quá 5, lưu thời gian khóa
         if ($_SESSION['login_attempts'] >= 5) {
             $_SESSION['lock_time'] = time();
         }
@@ -78,7 +81,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </p>
             <input name="username" placeholder="Username" required><br><br>
             <input type="password" name="password" placeholder="Password" required><br><br>
-            <input type="submit" value="Log In"> 
+            <!-- Thêm CSRF token -->
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+            <input type="submit" value="Log In">
             <?php if (isset($error)) { echo "<span style='color:red'>{$error}</span>"; } ?>
             <br><br>
             <?php include('includes/login_footer.php'); ?>
@@ -86,4 +91,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </body>
 </html>
-
