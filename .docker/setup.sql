@@ -1,3 +1,11 @@
+-- Create a "setup_complete" table if it doesn't exist
+CREATE TABLE IF NOT EXISTS setup_complete (completed BOOLEAN);
+-- Check if setup has already run
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM setup_complete WHERE completed = TRUE) THEN
+        -- Only run these commands if setup has not been completed
+	
 CREATE TABLE users (
 	uid SERIAL PRIMARY KEY NOT NULL,
 	username TEXT NOT NULL,
@@ -49,3 +57,8 @@ VALUES
 ('images/motd_1.png','TU Library'),
 ('images/motd_2.png','TU Hauptgebaude'),
 ('images/motd_3.png','TU Freihaus');
+
+   -- Mark setup as completed
+        INSERT INTO setup_complete (completed) VALUES (TRUE);
+    END IF;
+END $$;
