@@ -1,10 +1,11 @@
 <?php
 // Khởi động session an toàn
 session_start([
-    'cookie_httponly' => true,
-    'cookie_secure' => true,
-    'use_strict_mode' => true,
-    'use_only_cookies' => true,
+    'cookie_lifetime' => 3600,       // Cookie tồn tại trong 1 giờ
+    'cookie_secure' => true,        // Chỉ gửi cookie qua HTTPS
+    'cookie_httponly' => true,      // Chặn truy cập cookie từ JavaScript
+    'use_strict_mode' => true,      // Ngăn việc sử dụng session giả mạo
+    'use_only_cookies' => true,     // Chỉ dùng cookie để lưu session
 ]);
 
 // Kiểm tra nếu người dùng đã đăng nhập
