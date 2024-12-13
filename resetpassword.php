@@ -17,23 +17,25 @@ if ($_SESSION['attempts'] >= MAX_ATTEMPTS) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Lấy dữ liệu từ POST
-    $token = $_POST['token'] ?? null;
-    $password1 = $_POST['password1'] ?? null;
-    $password2 = $_POST['password2'] ?? null;
+    // Lấy dữ liệu từ POST và làm sạch đầu vào
+    $token = isset($_POST['token']) ? trim(htmlspecialchars($_POST['token'])) : null;
+    $password1 = isset($_POST['password1']) ? trim(htmlspecialchars($_POST['password1'])) : null;
+    $password2 = isset($_POST['password2']) ? trim(htmlspecialchars($_POST['password2'])) : null;
 
+    // Kiểm tra các tham số đầu vào
     if (!$token || !$password1 || !$password2) {
-        echo 'Invalid request';
+        echo '<h1 style="color:red">Invalid request. Missing parameters.</h1>';
         die();
     }
 
+    // Kiểm tra mật khẩu có khớp không
     if ($password1 !== $password2) {
         echo '<h1 style="color:red">Passwords do not match.</h1>';
         $_SESSION['attempts']++;
         die();
     }
 
-    // Kiểm tra token
+    // Kiểm tra token trong cơ sở dữ liệu
     $stmt = pg_prepare($db, "checktoken_query", "SELECT * FROM tokens WHERE token = $1");
     $result = pg_execute($db, "checktoken_query", array($token));
     if (pg_num_rows($result) === 0) {
@@ -42,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         die();
     }
 
-    // Kiểm tra hạn sử dụng token
+    // Kiểm tra hạn sử dụng của token
     $row = pg_fetch_assoc($result);
     $created_at = strtotime($row['created_at']);
     if (time() - $created_at > TOKEN_EXPIRY_TIME) {
@@ -56,12 +58,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $hashed_password = password_hash($password1, PASSWORD_BCRYPT);
 
     $stmt = pg_prepare($db, "changepassword_query", "UPDATE users SET password = $1 WHERE id = $2");
-    pg_execute($db, "changepassword_query", array($hashed_password, $uid));
+    if (!pg_execute($db, "changepassword_query", array($hashed_password, $uid))) {
+        echo '<h1 style="color:red">Error updating password. Please try again later.</h1>';
+        $_SESSION['attempts']++;
+        die();
+    }
 
     // Xóa token sau khi sử dụng
     $stmt = pg_prepare($db, "deletetoken_query", "DELETE FROM tokens WHERE token = $1");
     pg_execute($db, "deletetoken_query", array($token));
 
+    // Hiển thị thông báo thành công
     echo "<h1 style='color:green'>Password changed successfully!</h1>";
     die();
 }
@@ -87,4 +94,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php include('includes/login_footer.php'); ?>
 </body>
 </html>
-
