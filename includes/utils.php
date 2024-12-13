@@ -1,5 +1,4 @@
 <?php
-<?php
 	function generateToken($length = 32) {
 	    // Tạo chuỗi ngẫu nhiên bằng cách sử dụng random_bytes (mạnh mẽ hơn rand())
 	    $bytes = random_bytes($length); // Tạo chuỗi ngẫu nhiên với chiều dài là 32 byte
